@@ -6,6 +6,10 @@ using UnityEngine.InputSystem;
 /// </summary>
 public class FirstPersonController : MonoBehaviour
 {
+    [Header("Mouse Aim")]
+    [SerializeField, Tooltip("The mouse aim sensitivity.")]
+    private float m_MouseAimMultiplier = 5f;
+
     [Header("Player")]
     [Tooltip("Move speed of the character in m/s")]
     public float MoveSpeed = 4.0f;
@@ -38,16 +42,7 @@ public class FirstPersonController : MonoBehaviour
     [Tooltip("What layers the character uses as ground")]
     public LayerMask GroundLayers;
 
-    [Header("Cinemachine")]
-    [Tooltip("The follow target set in the Cinemachine Virtual Camera that the camera will follow")]
-    public GameObject CinemachineCameraTarget;
-    [Tooltip("How far in degrees can you move the camera up")]
-    public float TopClamp = 90.0f;
-    [Tooltip("How far in degrees can you move the camera down")]
-    public float BottomClamp = -90.0f;
-
-    // Cinemachine
-    private float _cinemachineTargetPitch; // Current pitch of the Cinemachine camera.
+    private MouseAimController m_Aimer = null;
 
     // Player
     private float _speed; // Current speed of the player.
@@ -62,9 +57,6 @@ public class FirstPersonController : MonoBehaviour
     private PlayerInput _playerInput; // Reference to the PlayerInput component.
     private CharacterController _controller; // Reference to the CharacterController component.
     private AssetsInputs _input; // Reference to the AssetsInputs component.
-    private GameObject _mainCamera; // Reference to the main camera.
-
-    private const float _threshold = 0.01f; // Small threshold value for input checks.
 
     /// <summary>
     /// Gets whether the current input device is a mouse.
@@ -82,11 +74,7 @@ public class FirstPersonController : MonoBehaviour
     /// </summary>
     private void Awake()
     {
-        // Get a reference to our main camera
-        if (_mainCamera == null)
-        {
-            _mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
-        }
+        m_Aimer = GetComponent<MouseAimController>();
     }
 
     /// <summary>
@@ -136,23 +124,10 @@ public class FirstPersonController : MonoBehaviour
     /// </summary>
     private void CameraRotation()
     {
-        // If there is an input
-        if (_input.look.sqrMagnitude >= _threshold)
-        {
-            float deltaTimeMultiplier = IsCurrentDeviceMouse ? 1.0f : Time.deltaTime;
-
-            // Adjust the pitch and yaw based on the input
-            _cinemachineTargetPitch += _input.look.y * RotationSpeed * deltaTimeMultiplier;
-            _rotationVelocity = _input.look.x * RotationSpeed * deltaTimeMultiplier;
-
-            // Clamp the pitch rotation to avoid excessive rotation
-            _cinemachineTargetPitch = ClampAngle(_cinemachineTargetPitch, BottomClamp, TopClamp);
-
-            // Apply the rotation to the camera target
-            CinemachineCameraTarget.transform.localRotation = Quaternion.Euler(_cinemachineTargetPitch, 0.0f, 0.0f);
-            // Rotate the player based on the input
-            transform.Rotate(Vector3.up * _rotationVelocity);
-        }
+        m_Aimer.HandleMouseInput(new Vector2(
+            Input.GetAxis("Mouse X") * m_MouseAimMultiplier,
+            Input.GetAxis("Mouse Y") * m_MouseAimMultiplier
+        ));
     }
 
     /// <summary>
@@ -160,50 +135,52 @@ public class FirstPersonController : MonoBehaviour
     /// </summary>
     private void Move()
     {
-        // Set target speed based on move speed, sprint speed and if sprint is pressed
+        // Set target speed based on move speed, sprint speed, and if sprint is pressed
         float targetSpeed = _input.sprint ? SprintSpeed : MoveSpeed;
 
-        // A simplistic acceleration and deceleration designed to be easy to remove, replace, or iterate upon
-
-        // Note: Vector2's == operator uses approximation so is not floating point error prone, and is cheaper than magnitude
         // If there is no input, set the target speed to 0
         if (_input.move == Vector2.zero) targetSpeed = 0.0f;
 
-        // A reference to the players current horizontal velocity
+        // A reference to the player's current horizontal velocity
         float currentHorizontalSpeed = new Vector3(_controller.velocity.x, 0.0f, _controller.velocity.z).magnitude;
 
         float speedOffset = 0.1f;
         float inputMagnitude = _input.analogMovement ? _input.move.magnitude : 1f;
 
-        // Accelerate or decelerate to target speed
+        // Accelerate or decelerate to the target speed
         if (currentHorizontalSpeed < targetSpeed - speedOffset || currentHorizontalSpeed > targetSpeed + speedOffset)
         {
-            // Creates curved result rather than a linear one giving a more organic speed change
-            // Note T in Lerp is clamped, so we don't need to clamp our speed
+            // Smooth acceleration/deceleration
             _speed = Mathf.Lerp(currentHorizontalSpeed, targetSpeed * inputMagnitude, Time.deltaTime * SpeedChangeRate);
-
-            // Round speed to 3 decimal places
-            _speed = Mathf.Round(_speed * 1000f) / 1000f;
+            _speed = Mathf.Round(_speed * 1000f) / 1000f; // Round speed to 3 decimal places
         }
         else
         {
             _speed = targetSpeed;
         }
 
-        // Normalize input direction
+        // Calculate input direction
         Vector3 inputDirection = new Vector3(_input.move.x, 0.0f, _input.move.y).normalized;
 
-        // Note: Vector2's != operator uses approximation so is not floating point error prone, and is cheaper than magnitude
-        // If there is a move input rotate player when the player is moving
+        // Rotate player to face the direction of movement relative to the camera
         if (_input.move != Vector2.zero)
         {
-            // Move
-            inputDirection = transform.right * _input.move.x + transform.forward * _input.move.y;
-        }
+            // Get the forward direction of the camera
+            Vector3 cameraForward = Camera.main.transform.forward;
+            cameraForward.y = 0; // Keep the rotation on the horizontal plane
+            cameraForward.Normalize();
 
+            // Calculate the target direction relative to the camera
+            Vector3 moveDirection = cameraForward * _input.move.y + Camera.main.transform.right * _input.move.x;
+
+            // Use the calculated movement direction
+            inputDirection = moveDirection.normalized;
+        }
+        
         // Move the player
-        _controller.Move(inputDirection.normalized * (_speed * Time.deltaTime) + new Vector3(0.0f, _verticalVelocity, 0.0f) * Time.deltaTime);
+        _controller.Move(inputDirection * (_speed * Time.deltaTime) + new Vector3(0.0f, _verticalVelocity, 0.0f) * Time.deltaTime);
     }
+
 
     /// <summary>
     /// Handles jumping and gravity.
@@ -261,23 +238,5 @@ public class FirstPersonController : MonoBehaviour
         {
             _verticalVelocity += Gravity * Time.deltaTime;
         }
-    }
-
-    /// <summary>
-    /// Clamps the given angle between the specified minimum and maximum values.
-    /// This ensures the angle remains within a 360-degree range and is clamped to the specified limits.
-    /// </summary>
-    /// <param name="lfAngle">The angle to clamp.</param>
-    /// <param name="lfMin">The minimum value.</param>
-    /// <param name="lfMax">The maximum value.</param>
-    /// <returns>The clamped angle.</returns>
-    private static float ClampAngle(float lfAngle, float lfMin, float lfMax)
-    {
-        // Ensure the angle is within a 360-degree range.
-        if (lfAngle < -360f) lfAngle += 360f;
-        if (lfAngle > 360f) lfAngle -= 360f;
-
-        // Clamp the angle to the specified minimum and maximum values.
-        return Mathf.Clamp(lfAngle, lfMin, lfMax);
     }
 }
