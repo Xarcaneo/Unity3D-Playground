@@ -42,6 +42,29 @@ public class FirstPersonController : MonoBehaviour
     [Tooltip("What layers the character uses as ground")]
     public LayerMask GroundLayers;
 
+    [Header("Animation Procedural")]
+    [Tooltip("Character Animator.")]
+    [SerializeField] private Animator characterAnimator;
+
+    [Header("Animation")]
+    [Tooltip("Determines how smooth the locomotion blendspace is.")]
+    [SerializeField]
+    private float dampTimeLocomotion = 0.15f;
+
+    /// <summary>
+    /// Overlay Layer Index. Useful for playing things like firing animations.
+    /// </summary>
+    private int layerOverlay;
+    /// <summary>
+    /// Holster Layer Index. Used to play holster animations.
+    /// </summary>
+    private int layerHolster;
+    /// <summary>
+    /// Actions Layer Index. Used to play actions like reloading.
+    /// </summary>
+    private int layerActions;
+
+    private LayerMask m_LayerMask;  
     private MouseAimController m_Aimer = null;
 
     // Player
@@ -57,6 +80,20 @@ public class FirstPersonController : MonoBehaviour
     private PlayerInput _playerInput; // Reference to the PlayerInput component.
     private CharacterController _controller; // Reference to the CharacterController component.
     private AssetsInputs _input; // Reference to the AssetsInputs component.
+
+    #region CONSTANTS
+
+    /// <summary>
+    /// Aiming Alpha Value.
+    /// </summary>
+    private static readonly int HashAimingAlpha = Animator.StringToHash("Aiming");
+
+    /// <summary>
+    /// Hashed "Movement".
+    /// </summary>
+    private static readonly int HashMovement = Animator.StringToHash("Movement");
+
+    #endregion
 
     /// <summary>
     /// Gets whether the current input device is a mouse.
@@ -89,6 +126,13 @@ public class FirstPersonController : MonoBehaviour
         // Reset our timeouts on start
         _jumpTimeoutDelta = JumpTimeout;
         _fallTimeoutDelta = FallTimeout;
+
+        //Cache a reference to the holster layer's index.
+        layerHolster = characterAnimator.GetLayerIndex("Layer Holster");
+        //Cache a reference to the action layer's index.
+        layerActions = characterAnimator.GetLayerIndex("Layer Actions");
+        //Cache a reference to the overlay layer's index.
+        layerOverlay = characterAnimator.GetLayerIndex("Layer Overlay");
     }
 
     /// <summary>
@@ -99,6 +143,7 @@ public class FirstPersonController : MonoBehaviour
         JumpAndGravity();
         GroundedCheck();
         Move();
+        UpdateAnimator();
     }
 
     /// <summary>
@@ -238,5 +283,18 @@ public class FirstPersonController : MonoBehaviour
         {
             _verticalVelocity += Gravity * Time.deltaTime;
         }
+    }
+
+    /// <summary>
+    /// Updates all the animator properties for this frame.
+    /// </summary>
+    private void UpdateAnimator()
+    {
+        //Movement Value. This value affects absolute movement. Aiming movement uses this, as opposed to per-axis movement.
+        characterAnimator.SetFloat(HashMovement, Mathf.Clamp01(Mathf.Abs(_input.move.x) + Mathf.Abs(_input.move.y)), dampTimeLocomotion, Time.deltaTime);
+
+        //Update Animator Running.
+        const string boolNameRun = "Running";
+        characterAnimator.SetBool(boolNameRun, _input.sprint);
     }
 }
