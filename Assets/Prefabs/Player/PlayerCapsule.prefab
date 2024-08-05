@@ -380,6 +380,7 @@ MonoBehaviour:
   inventory: {fileID: 3465582026568328823}
   characterAnimator: {fileID: 5259531490475100360}
   dampTimeLocomotion: 0.15
+  mainCamera: {fileID: 1791533126}
 --- !u!114 &1460344062
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -603,6 +604,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: eea8b55bf551d6c48be495960f490f81, type: 3}
+--- !u!20 &1791533126 stripped
+Camera:
+  m_CorrespondingSourceObject: {fileID: 4548802625739808021, guid: eea8b55bf551d6c48be495960f490f81, type: 3}
+  m_PrefabInstance: {fileID: 4548802626440756563}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &1791533127 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4548802625739808020, guid: eea8b55bf551d6c48be495960f490f81, type: 3}

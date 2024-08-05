@@ -55,6 +55,11 @@ public class FirstPersonController : MonoBehaviour
     [SerializeField]
     private float dampTimeLocomotion = 0.15f;
 
+    [Header("Camera")]
+    [Tooltip("Primary camera used for world interactions.")]
+    [SerializeField]
+    private Camera mainCamera;
+
     /// <summary>
     /// Overlay Layer Index. Useful for playing things like firing animations.
     /// </summary>
@@ -272,6 +277,10 @@ public class FirstPersonController : MonoBehaviour
     {
         //Save the shot time, so we can calculate the fire rate correctly.
         lastShotTime = Time.time;
+
+        //Fire using equipped weapon
+        equippedWeapon.Fire();
+
         //Play firing animation.
         const string stateName = "Fire";
         characterAnimator.CrossFade(stateName, 0.05f, layerOverlay, 0);
@@ -371,4 +380,9 @@ public class FirstPersonController : MonoBehaviour
         if ((equippedWeapon = inventory.GetEquippedWeapon()) == null)
             return;
     }
+
+    /// <summary>
+    /// Returns the main camera used for world interactions.
+    /// </summary>
+    public Camera GetMainCamera() => mainCamera;
 }
