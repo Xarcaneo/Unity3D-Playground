@@ -19,6 +19,9 @@ public class AssetsInputs : MonoBehaviour
     [Tooltip("Indicates whether the sprint action has been triggered.")]
     public bool sprint;
 
+    [Tooltip("Indicates whether the fire action has been triggered.")]
+    public bool fire;
+
     [Header("Movement Settings")]
     [Tooltip("Determines if movement input should be analog.")]
     public bool analogMovement;
@@ -70,6 +73,15 @@ public class AssetsInputs : MonoBehaviour
     }
 
     /// <summary>
+    /// Handles the input action for firing.
+    /// </summary>
+    /// <param name="value">The input value for the firing action.</param>
+    public void OnFire(InputValue value)
+    {
+        FireInput(value.isPressed);
+    }
+
+    /// <summary>
     /// Sets the movement input value.
     /// </summary>
     /// <param name="newMoveDirection">The new movement direction input value.</param>
@@ -103,6 +115,15 @@ public class AssetsInputs : MonoBehaviour
     public void SprintInput(bool newSprintState)
     {
         sprint = newSprintState;
+    }
+
+    /// <summary>
+    /// Sets the fire input value.
+    /// </summary>
+    /// <param name="newSprintState">The new fire state input value.</param>
+    public void FireInput(bool newFireState)
+    {
+        fire = newFireState;
     }
 
     /// <summary>

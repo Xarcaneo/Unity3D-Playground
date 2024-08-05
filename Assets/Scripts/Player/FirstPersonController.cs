@@ -42,6 +42,10 @@ public class FirstPersonController : MonoBehaviour
     [Tooltip("What layers the character uses as ground")]
     public LayerMask GroundLayers;
 
+    [Tooltip("Inventory.")]
+    [SerializeField]
+    private Inventory inventory;
+
     [Header("Animation Procedural")]
     [Tooltip("Character Animator.")]
     [SerializeField] private Animator characterAnimator;
@@ -95,6 +99,25 @@ public class FirstPersonController : MonoBehaviour
 
     #endregion
 
+    #region FIELDS
+
+    /// <summary>
+    /// True if the character is sprinting.
+    /// </summary>
+    private bool sprinting;
+
+    /// <summary>
+    /// The currently equipped weapon.
+    /// </summary>
+    private Weapon equippedWeapon;
+
+    #endregion
+
+    /// <summary>
+    /// Last Time.time at which we shot.
+    /// </summary>
+    private float lastShotTime;
+
     /// <summary>
     /// Gets whether the current input device is a mouse.
     /// </summary>
@@ -112,6 +135,12 @@ public class FirstPersonController : MonoBehaviour
     private void Awake()
     {
         m_Aimer = GetComponent<MouseAimController>();
+
+        //Initialize Inventory.
+        inventory.Initialize();
+
+        //Load weapon
+        WeaponSetup();
     }
 
     /// <summary>
@@ -143,6 +172,16 @@ public class FirstPersonController : MonoBehaviour
         JumpAndGravity();
         GroundedCheck();
         Move();
+
+        if(_input.fire)
+        {
+            //Has fire rate passed.
+            if (Time.time - lastShotTime > 60.0f / equippedWeapon.GetFireRate())
+            {
+                Fire();
+            }
+        }
+
         UpdateAnimator();
     }
 
@@ -180,8 +219,11 @@ public class FirstPersonController : MonoBehaviour
     /// </summary>
     private void Move()
     {
+        //Match Sprint.
+        sprinting = _input.sprint && CanSprint();
+
         // Set target speed based on move speed, sprint speed, and if sprint is pressed
-        float targetSpeed = _input.sprint ? SprintSpeed : MoveSpeed;
+        float targetSpeed = sprinting ? SprintSpeed : MoveSpeed;
 
         // If there is no input, set the target speed to 0
         if (_input.move == Vector2.zero) targetSpeed = 0.0f;
@@ -224,6 +266,15 @@ public class FirstPersonController : MonoBehaviour
         
         // Move the player
         _controller.Move(inputDirection * (_speed * Time.deltaTime) + new Vector3(0.0f, _verticalVelocity, 0.0f) * Time.deltaTime);
+    }
+
+    private void Fire()
+    {
+        //Save the shot time, so we can calculate the fire rate correctly.
+        lastShotTime = Time.time;
+        //Play firing animation.
+        const string stateName = "Fire";
+        characterAnimator.CrossFade(stateName, 0.05f, layerOverlay, 0);
     }
 
 
@@ -295,6 +346,29 @@ public class FirstPersonController : MonoBehaviour
 
         //Update Animator Running.
         const string boolNameRun = "Running";
-        characterAnimator.SetBool(boolNameRun, _input.sprint);
+        characterAnimator.SetBool(boolNameRun, sprinting);
+    }
+
+    /// <summary>
+    /// Returns true if the character can run.
+    /// </summary>
+    /// <returns></returns>
+    private bool CanSprint()
+    {
+        //While we attempt fire, we dont allow to sprint
+        if(_input.fire) //Later also add check for ammunition quantity, if 0 we dont return false 
+            return false;
+
+        return true;
+    }
+
+    /// <summary>
+    /// Setup weapon animations and all weapon elements.
+    /// </summary>
+    private void WeaponSetup()
+    {
+        //Assign weapon to variable and check if its not NULL.
+        if ((equippedWeapon = inventory.GetEquippedWeapon()) == null)
+            return;
     }
 }

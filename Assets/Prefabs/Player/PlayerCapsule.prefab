@@ -377,6 +377,7 @@ MonoBehaviour:
   GroundLayers:
     serializedVersion: 2
     m_Bits: 1
+  inventory: {fileID: 3465582026568328823}
   characterAnimator: {fileID: 5259531490475100360}
   dampTimeLocomotion: 0.15
 --- !u!114 &1460344062
@@ -395,6 +396,7 @@ MonoBehaviour:
   look: {x: 0, y: 0}
   jump: 0
   sprint: 0
+  fire: 0
   analogMovement: 0
   cursorLocked: 1
   cursorInputForLook: 1
@@ -1546,9 +1548,24 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 3166111995490883987, guid: dfd68ddcedb36d84ea5fe5e4a420085e, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 4042822489828783017, guid: dfd68ddcedb36d84ea5fe5e4a420085e, type: 3}
       propertyPath: m_Name
       value: Inventory
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: dfd68ddcedb36d84ea5fe5e4a420085e, type: 3}
+--- !u!114 &3465582026568328823 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 5041087149864673971, guid: dfd68ddcedb36d84ea5fe5e4a420085e, type: 3}
+  m_PrefabInstance: {fileID: 8497644266844914884}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a961a4d4c6349224ca145773d7da903f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
